@@ -79,18 +79,6 @@ docs/
 
 ## Running the simulation
 
-Requirements: Linux, Vivado with `xvlog`, `xelab` and `xsim` in your `PATH`, and GNU Make. The Makefile locates sources through `git rev-parse --show-toplevel`, so run it from a cloned repository.
-
-```bash
-git clone https://github.com/<your-user>/alu-16bit-sv-verification.git
-cd alu-16bit-sv-verification/verification
-
-make -f Makefile.xilinx tools-check    # verify that the tools are available
-make -f Makefile.xilinx compile        # xvlog
-make -f Makefile.xilinx elaborate      # xelab
-make -f Makefile.xilinx sim            # xsim
-```
-
 Useful variables:
 
 | Variable | Default | Description |
@@ -98,8 +86,6 @@ Useful variables:
 | `SEED` | `1` | Random seed (integer > 0) |
 | `GUI_MODE` | `false` | `true` opens the xsim GUI |
 | `CODE_COV` | `true` | Collects code coverage (statement, branch, condition, toggle) with `xelab -cc_type sbct` |
-
-Example: `make -f Makefile.xilinx sim SEED=42`. Use `make -f Makefile.xilinx clean` to remove simulation outputs.
 
 ## FPGA deployment and timing (documented in the report)
 
@@ -123,19 +109,9 @@ Worst setup slack reported in the project report (50 MHz, three PVT corners):
 | Self-checking scoreboard or reference model | Not implemented yet |
 | SystemVerilog assertions and functional coverage | Not implemented yet |
 
-## Limitations and next steps
-
-- The testbench logs the outputs but does not compare them against an expected value, so pass/fail is judged from the log and waveform.
-- Control bits are held at one fixed configuration per run; only the operands are randomized, and the operand range is limited.
-- Next steps: add a scoreboard with a reference model, randomize the control word, add assertions and functional coverage, and extend the environment toward full UVM classes.
-
 ## Tools
 
 SystemVerilog · Vivado Simulator (xvlog, xelab, xsim) · GNU Make · Linux · Quartus Prime · Terasic DE2-115 (Cyclone IV E EP4CE115F29C7)
-
-## License
-
-MIT License. See [LICENSE](LICENSE).
 
 ## Author
 
