@@ -111,7 +111,7 @@ Worst setup slack reported in the project report (50 MHz, three PVT corners):
 
 ## Tools
 
-SystemVerilog · Vivado Simulator (xvlog, xelab, xsim) · GNU Make · Linux · Quartus Prime · Terasic DE2-115 (Cyclone IV E EP4CE115F29C7)
+SystemVerilog · Vivado Simulator (xvlog, xelab, xsim) · GNU Make · Linux · Quartus Prime Lite · Terasic DE2-115 (Cyclone IV E EP4CE115F29C7)
 
 ## Author
 
