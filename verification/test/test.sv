@@ -55,8 +55,8 @@ module test (
     //Initial Values
     for (int i = 0; i < 100; i++) begin
       @(vif.cb);
-      vif.cb.x_i  <= $urandom_range(0, 15);
-      vif.cb.y_i  <= $urandom_range(0, 15);
+      vif.cb.x_i  <= $urandom_range(0, 65535);
+      vif.cb.y_i  <= $urandom_range(0, 65535);
       vif.cb.zx_i <= '0;
       vif.cb.nx_i <= '1;
       vif.cb.zy_i <= '0;
