@@ -1,0 +1,205 @@
+##=============================================================================
+## [Filename]       Makefile.xilinx
+## [Project]        -
+## [Language]       GNU Makefile
+## [Created]        Jan 2025
+## [Modified]       -
+## [Description]    - 
+## [Notes]          -
+## [Status]         stable
+## [Revisions]      -
+##=============================================================================
+
+# ===============================  VARIABLES  =================================
+
+# Miscellaneous variables
+CUR_DATE   := $(shell date +%Y-%m-%d_%H-%M-%S)
+
+# Directories
+GIT_DIR     := $(shell git rev-parse --show-toplevel)
+ROOT_DIR    := $(CURDIR)
+RUN_DIR     := $(ROOT_DIR)/sim
+LOGS_DIR    := $(ROOT_DIR)/logs
+WDB_DIR     := $(ROOT_DIR)/wdb
+SCRIPTS_DIR := $(GIT_DIR)/scripts
+TCL_DIR     := $(SCRIPTS_DIR)/vivado
+RTL_DIR     := $(GIT_DIR)/verification/rtl
+TB_DIR     := $(GIT_DIR)/verification/tb
+TEST_DIR   := $(GIT_DIR)/verification/test
+SV_DIR		:=$(GIT_DIR)/verification/sv
+
+
+
+# UVM configurations
+TEST ?= top_test
+VERBOSITY ?= UVM_MEDIUM
+SEED ?= 1
+XVLOG_DEFINES ?= -d GIT_DIR=\"$(UVM_DIR)\"
+SIMV_ARGS ?=
+
+# Simulation mode
+GUI_MODE  ?= false
+RUN_FLAGS ?= -onfinish quit
+
+# Code Coverage
+CODE_COV  ?= true
+COV_FLAGS ?= 
+
+# ================================  CONTROL  ==================================
+
+# Simulation mode switch
+ifeq ($(GUI_MODE),true)
+	RUN_FLAGS = -gui &
+endif
+
+# Code Coverage switchs
+# Este comando ira en Xelab, especificado en la pagina 147 y 158 vivado
+ifeq ($(CODE_COV),true)
+# comando para guardar la covertura  cc, con el cov_db_dir creo la carpeta y con cov_dv_name creo el grupo donde estaran todos los files
+	COV_FLAGS += -cc_type sbct -cov_db_dir $(RUN_DIR)/coverage_r -cov_db_name coverage_db
+endif
+
+# ==============================  TOOLS SETUP  ================================
+
+# Files
+RTL_FILES = $(RTL_DIR)/alu.sv 
+
+# Agregar la interfaz y los archivos del entorno/testbench
+TB_FILE =	$(SV_DIR)/vif.sv \
+			$(TEST_DIR)/test.sv \
+			$(TB_DIR)/tb.sv
+
+# Vivado XVLOG/XELAB/XSIM options
+FILES =  $(RTL_FILES) $(TB_FILE)
+
+XVLOG_FLAGS = -sv $(XVLOG_DEFINES) $(FILES) \
+							-work work \
+							-L uvm \
+							$(XVLOG_DEFINES) \
+							-log $(LOGS_DIR)/compile.log
+
+XELAB_FLAGS = tb -debug all \
+							-s work.tb \
+							-mt 10 \
+							-timescale 1ns/100ps \
+							$(COV_FLAGS) \
+							-L work -L xil_defaultlib -L uvm \
+							-override_timeunit -override_timeprecision \
+							-L xpm -L unisims_ver -L unimacro_ver -L secureip \
+							-log $(LOGS_DIR)/elaborate.log
+
+
+# -v 2    to check for C errors
+XSIM_FLAGS = work.tb -wdb $(WDB_DIR)/tb.wdb \
+						 -tclbatch $(TCL_DIR)/run.tcl \
+						 -testplusarg UVM_TESTNAME=$(TEST) \
+						 -testplusarg UVM_VERBOSITY=$(VERBOSITY) \
+						 -stats -onerror stop \
+						 -log $(LOGS_DIR)/simulate.log \
+						 -sv_seed $(SEED) \
+						 $(RUN_FLAGS) 
+
+
+WAVE_FLAGS = work.tb -view $(WDB_DIR)/tb.wdb -gui
+
+
+# Colors
+C_RED := \033[31m
+C_GRE := \033[32m
+C_BLU := \033[34m
+C_YEL := \033[33m
+C_ORA := \033[38;5;214m
+NC    := \033[0m 
+
+# Synopsys tools
+SYNOPSYS_TOOLS = vivado xvlog xelab xsim
+
+# ================================  TARGETS  ==================================
+.DEFAULT_GOAL := all
+SHELL         := bash
+
+.PHONY: all
+all: help
+#______________________________________________________________________________
+
+.PHONY: tools-check
+tools-check: ## Check for missing tools
+	@echo -e "$(C_ORA)Synopsys tool checking...$(NC)"
+	@for tool in $(SYNOPSYS_TOOLS); do \
+		if ! command -v $$tool >/dev/null 2>&1; then \
+			echo -e "$(C_RED)Error: $(C_BLU)$$tool$(C_RED) is not installed or not in PATH$(NC)"; \
+			exit 1; \
+		else \
+			echo -e "$(C_BLU)$$tool$(NC)\t is INSTALLED$(NC)"; \
+		fi; \
+	done
+	@echo "All Synopsys tools are available"
+#______________________________________________________________________________
+
+.PHONY: version
+vcs-version: ## Display Synopsys VCS version
+	vcs -ID
+#______________________________________________________________________________
+
+.PHONY: vars
+vars: ## Print Makefile variables
+	@echo ""
+	@echo -e "$(C_ORA)Miscellaneous variables...$(NC)"
+	@echo "CUR_DATE    = $(CUR_DATE)"
+	@echo ""
+	@echo -e "$(C_ORA)Directory variables...$(NC)"
+	@echo "GIT_DIR     = $(GIT_DIR)"
+	@echo "ROOT_DIR    = $(ROOT_DIR)"
+	@echo "RUN_DIR     = $(RUN_DIR)"
+	@echo "LOGS_DIR    = $(LOGS_DIR)"
+	@echo "SCRIPTS_DIR = $(SCRIPTS_DIR)"
+	@echo "RTL_DIR     = $(RTL_DIR)"
+	@echo "TCL_DIR     = $(TCL_DIR)"
+	@echo ""
+#______________________________________________________________________________
+
+.PHONY: compile
+compile: ## Runs XVLOG compilation
+	@echo -e "$(C_ORA)Compiling UVM project$(NC)"
+	@mkdir -p $(RUN_DIR) $(LOGS_DIR)
+	cd $(RUN_DIR) && xvlog $(XVLOG_FLAGS)
+#______________________________________________________________________________
+
+.PHONY: elaborate
+elaborate: ## Runs XELAB elaboration
+	@echo -e "$(C_ORA)Elaborating UVM project$(NC)"
+	cd $(RUN_DIR) && xelab $(XELAB_FLAGS)
+#______________________________________________________________________________
+
+.PHONY: sim
+sim: ## Runs XSIM simulation using SEED
+	@echo -e "$(C_ORA)Running simulation SEED=$(SEED)$(NC)"
+	@mkdir -p $(WDB_DIR)
+	cd $(RUN_DIR) && xsim $(XSIM_FLAGS) 
+#_________________________________________________________________________________________________________________
+.PHONY: clean
+clean: ## Remove all simulation files
+	@echo -e "$(C_ORA)Removing all simulation files$(NC)"
+	rm -rf $(RUN_DIR) $(LOGS_DIR) $(WDB_DIR) 
+#______________________________________________________________________________
+
+.PHONY: help
+help: ## Displays help message
+	@echo ""
+	@echo "======================================================================"
+	@echo ""
+	@echo "Usage: make <target> <variables>"
+	@echo ""
+	@echo "--------------------------- Targets ----------------------------------"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "- make \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@echo ""
+	@echo "--------------------------- Variables -------------------------------"
+	@echo "  TEST              : Name of UVM_TEST"
+	@echo "  VERBOSITY         : UVM_VERBOSITY of the simulation"
+	@echo "  SEED              : Random seed used, must be an integer > 0"
+	@echo "  VCS_DEFINES       : Add defines to vcs command"
+	@echo "  SIMV_ARG          : Add plusargs to simv command"
+	@echo "  GUI_MODE          : Enables to run the sim in gui mode [true|false]"
+	@echo "  CODE_COV          : Enables code coverage [true|false]"
+	@echo "======================================================================"
+	@echo ""
