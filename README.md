@@ -6,7 +6,7 @@ This was the final project of a hardware verification course. The design was als
 
 > The focus of this repository is the **verification environment**.
 
-![Vivado xsim waveform](docs/waveform_xsim.png)
+![Vivado xsim waveform](docs/vivado_waveform.png)
 
 ## Highlights
 
