@@ -77,7 +77,7 @@ always_comb begin
     endcase
   end
 
-always_ff @(posedge clk_i or posedge rst_i) begin
+    always_ff @(posedge clk_i or negedge rst_i) begin
   if (!rst_i) begin
     zr_o  <= 0;
     ng_o  <= 0;
